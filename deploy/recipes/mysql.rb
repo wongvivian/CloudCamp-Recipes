@@ -1,42 +1,102 @@
-require 'resolv'
-
-node[:deploy].each do |application, deploy|
-  mysql_command = "/usr/bin/mysql -u #{deploy[:database][:username]} #{node[:mysql][:server_root_password].blank? ? '' : "-p#{node[:mysql][:server_root_password]}"}"
-
-  execute "create mysql database" do
-    command "#{mysql_command} -e 'CREATE DATABASE `#{deploy[:database][:database]}`' "
+node[:deploy].each do |app_name, deploy|
+  execute "mysql-create-table" do
+    command "/usr/bin/mysql -u#{deploy[:database][:username]} -p#{deploy[:database][:password]} #{deploy[:database][:database]} -e'CREATE TABLE #{node[:phpapp][:dbtable]}(
+      -- phpMyAdmin SQL Dump
+      -- version 3.5.1
+      -- http://www.phpmyadmin.net
+      --
+      -- Host: localhost
+      -- Generation Time: May 28, 2013 at 06:05 AM
+      -- Server version: 5.5.24-log
+      -- PHP Version: 5.3.13
+      
+      SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
+      SET time_zone = "+00:00";
+      
+      
+      /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+      /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+      /*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+      /*!40101 SET NAMES utf8 */;
+      
+      --
+      -- Database: `campsite_php`
+      --
+      
+      -- --------------------------------------------------------
+      
+      --
+      -- Table structure for table `event`
+      --
+      
+      CREATE TABLE IF NOT EXISTS `event` (
+                                          `id` int(11) NOT NULL AUTO_INCREMENT,
+                                          `name` varchar(255) NOT NULL,
+                                          `description` longtext NOT NULL,
+                                          `from_date` datetime NOT NULL,
+                                          `to_date` datetime NOT NULL,
+                                          `address` longtext NOT NULL,
+                                          `city` varchar(255) NOT NULL,
+                                          `state` varchar(255) NOT NULL,
+                                          `country` varchar(255) NOT NULL,
+                                          `zipcode` varchar(255) NOT NULL,
+                                          `is_active` smallint(6) NOT NULL,
+                                          `createdat` datetime NOT NULL,
+                                          `updatedat` datetime NOT NULL,
+                                          PRIMARY KEY (`id`)
+                                          ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+      
+      -- --------------------------------------------------------
+      
+      --
+      -- Table structure for table `event_user`
+      --
+      
+      CREATE TABLE IF NOT EXISTS `event_user` (
+                                               `event_id` int(11) NOT NULL,
+                                               `user_id` int(11) NOT NULL,
+                                               PRIMARY KEY (`event_id`,`user_id`),
+                                               KEY `IDX_92589AE271F7E88B` (`event_id`),
+                                               KEY `IDX_92589AE2A76ED395` (`user_id`)
+                                               ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+      
+      -- --------------------------------------------------------
+      
+      --
+      -- Table structure for table `user`
+      --
+      
+      CREATE TABLE IF NOT EXISTS `user` (
+                                         `id` int(11) NOT NULL AUTO_INCREMENT,
+                                         `first_name` varchar(255) NOT NULL,
+                                         `last_name` varchar(255) NOT NULL,
+                                         `address` longtext NOT NULL,
+                                         `city` varchar(255) NOT NULL,
+                                         `state` varchar(255) NOT NULL,
+                                         `zipcode` int(11) NOT NULL,
+                                         `country` varchar(255) NOT NULL,
+                                         `job_title` varchar(255) NOT NULL,
+                                         `company` varchar(255) NOT NULL,
+                                         `website` varchar(255) NOT NULL,
+                                         `blog` varchar(255) NOT NULL,
+                                         PRIMARY KEY (`id`)
+                                         ) ENGINE=InnoDB DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+      
+      --
+      -- Constraints for dumped tables
+      --
+      
+      --
+      -- Constraints for table `event_user`
+      --
+      ALTER TABLE `event_user`
+      ADD CONSTRAINT `FK_92589AE271F7E88B` FOREIGN KEY (`event_id`) REFERENCES `event` (`id`) ON DELETE CASCADE,
+      ADD CONSTRAINT `FK_92589AE2A76ED395` FOREIGN KEY (`user_id`) REFERENCES `user` (`id`) ON DELETE CASCADE;
+      
+      /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+      /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+      /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;  )'"
+    not_if "/usr/bin/mysql -u#{deploy[:database][:username]} -p#{deploy[:database][:password]} #{deploy[:database][:database]} -e'SHOW TABLES' | grep #{node[:phpapp][:dbtable]}"
     action :run
-
-    not_if do
-      system("#{mysql_command} -e 'SHOW DATABASES' | egrep -e '^#{deploy[:database][:database]}$'")
-    end
-  end
-
-  # this is legacy and you should not rely on it
-  ruby_block "get hosts list" do
-    block do
-      if Chef::VERSION > "0.9"
-        template = run_context.resource_collection.find(:template => "/tmp/grants.sql")
-      else
-        # this is a bug, and should just be 'resources'
-        template = @collection.resources(:template => "/tmp/grants.sql")
-      end
-      status, stdout, stderr = Chef::Mixin::Command.output_of_command("echo 'select host from db where db=\"#{deploy[:database][:database]}\" and user =\"root\"' | #{mysql_command} --skip-column-names mysql", {})
-      template.variables[:hosts] = stdout.split("\n").delete_if{|host| host == '127.0.0.1' || host == 'localhost'}
-    end
-  end
-
-  template "/tmp/grants.sql" do
-    source 'grants.sql.erb'
-    owner 'root'
-    group 'root'
-    mode '0600'
-    variables :hosts => [], :settings => deploy[:database], :stack_clients => node[:mysql][:clients].select{|private_ip| Resolv.getaddress(private_ip) }
-    cookbook "mysql"
-    action :create
-  end
-
-  execute 'create grants' do
-    command "#{mysql_command} < /tmp/grants.sql"
   end
 end
