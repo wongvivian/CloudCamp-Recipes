@@ -22,6 +22,9 @@ SET time_zone = "+00:00";
 
 -- --------------------------------------------------------
 
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY PASSWORD 'changeme' WITH GRANT OPTION;
+FLUSH PRIVILIGES;
+
 --
 -- Table structure for table `event`
 --
