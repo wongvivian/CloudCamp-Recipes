@@ -1,3 +1,5 @@
+require 'resolv'
+
 cookbook_file "/tmp/mydb-init.sql" do
     source "mydb-init.sql"
 end
