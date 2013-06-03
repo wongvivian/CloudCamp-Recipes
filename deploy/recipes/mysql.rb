@@ -3,7 +3,7 @@ cookbook_file "/tmp/mydb-init.sql" do
 end
 
 execute "initialize mysql tables" do
-    command "/usr/bin/mysql -uroot -pchangeme cloudcamp}  < /tmp/mydb-init.sql"
+    command "/usr/bin/mysql -uroot -pchangeme cloudcamp  < /tmp/mydb-init.sql"
     action :run
 end
 
