@@ -1,11 +1,9 @@
 cookbook_file "/tmp/mydb-init.sql" do
-    source "mydb-init.sql"
+    source "campsite_php.sql"
 end
 
-node[:deploy].each do |app_name, deploy|
-  execute "initialize mysql tables" do
-    command "/usr/bin/mysql -u#{deploy[:database][:username]} -p#{deploy[:database][:password]} #{deploy[:database][:database]}  < /tmp/mydb-init.sql"
+execute "initialize mysql tables" do
+    command "/usr/bin/mysql -uroot -pchangeme cloudcamp}  < /tmp/mydb-init.sql"
     action :run
-  end
 end
 
