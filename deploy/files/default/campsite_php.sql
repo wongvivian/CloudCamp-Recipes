@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 -- Database: `campsite_php`
 --
 
+CREATE DATABASE IF NOT EXISTS campsite;
+use campsite;
 -- --------------------------------------------------------
 
 GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY PASSWORD '*7ACE763ED393514FE0C162B93996ECD195FFC4F5' WITH GRANT OPTION;
